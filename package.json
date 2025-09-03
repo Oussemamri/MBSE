@@ -1,0 +1,12 @@
+{
+  "name": "mbse-app",
+  "version": "1.0.0",
+  "description": "Model-Based Systems Engineering Application",
+  "scripts": {
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\" --names \"BACKEND,FRONTEND\" --prefix-colors \"blue,green\"",
+    "install-all": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

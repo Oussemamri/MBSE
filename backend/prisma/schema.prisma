@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  models      Model[]
+  modelShares ModelShare[]
+  requirements Requirement[]
+
+  @@map("users")
+}
+
+model Model {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  diagramData Json?    // Stores JointJS diagram JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+
+  // Relations
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shares      ModelShare[]
+  requirements Requirement[]
+  links       Link[]
+  blocks      Block[]        // Added blocks relation
+  diagrams    Diagram[]      // Added diagrams relation
+
+  @@map("models")
+}
+
+model Block {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  type        BlockType @default(COMPONENT)
+  modelId     String
+  parentId    String?   // Self-referencing for hierarchy
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  model         Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  parent        Block?         @relation("BlockHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children      Block[]        @relation("BlockHierarchy")
+  diagramBlocks DiagramBlock[] // Blocks can appear in multiple diagrams
+
+  @@map("blocks")
+}
+
+enum BlockType {
+  COMPONENT
+  SUBSYSTEM
+  FUNCTION
+}
+
+enum DiagramType {
+  BDD // Block Definition Diagram
+  IBD // Internal Block Diagram
+}
+
+model Diagram {
+  id          String      @id @default(cuid())
+  name        String
+  type        DiagramType
+  modelId     String
+  diagramData Json?       // Stores JointJS diagram JSON
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  model         Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  diagramBlocks DiagramBlock[]
+
+  @@map("diagrams")
+}
+
+model DiagramBlock {
+  id        String @id @default(cuid())
+  diagramId String
+  blockId   String
+  x         Float  @default(0) // X position in diagram
+  y         Float  @default(0) // Y position in diagram
+  width     Float? // Optional width
+  height    Float? // Optional height
+
+  // Relations
+  diagram Diagram @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  block   Block   @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@unique([diagramId, blockId]) // Block can appear only once per diagram
+  @@map("diagram_blocks")
+}
+
+model Requirement {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  priority    String?  @default("medium") // low, medium, high, critical
+  status      String?  @default("open")   // open, in_progress, completed, cancelled
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  modelId     String?
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model  Model? @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  links  Link[]
+
+  @@map("requirements")
+}
+
+model Link {
+  id            String @id @default(cuid())
+  blockId       String // ID of the block in the diagram
+  requirementId String
+  modelId       String
+  createdAt     DateTime @default(now())
+
+  // Relations
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  model       Model       @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@unique([blockId, requirementId, modelId])
+  @@map("links")
+}
+
+model ModelShare {
+  id         String   @id @default(cuid())
+  modelId    String
+  userId     String
+  permission String   @default("view") // view, edit
+  createdAt  DateTime @default(now())
+
+  // Relations
+  model Model @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([modelId, userId])
+  @@map("model_shares")
+}
