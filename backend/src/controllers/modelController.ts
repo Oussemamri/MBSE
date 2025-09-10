@@ -29,7 +29,13 @@ export const getModels = async (req: AuthRequest, res: Response) => {
       orderBy: { updatedAt: 'desc' }
     });
 
-    res.json({ models });
+    // Parse diagramData for all models
+    const modelsWithParsedData = models.map(model => ({
+      ...model,
+      diagramData: model.diagramData ? JSON.parse(model.diagramData) : null
+    }));
+
+    res.json({ models: modelsWithParsedData });
   } catch (error) {
     console.error('Get models error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -72,7 +78,13 @@ export const getModel = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Model not found' });
     }
 
-    res.json({ model });
+    // Parse diagramData back to JSON for the response
+    const modelWithParsedData = {
+      ...model,
+      diagramData: model.diagramData ? JSON.parse(model.diagramData) : null
+    };
+
+    res.json({ model: modelWithParsedData });
   } catch (error) {
     console.error('Get model error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -87,7 +99,7 @@ export const createModel = async (req: AuthRequest, res: Response) => {
       data: {
         name,
         description,
-        diagramData,
+        diagramData: diagramData ? JSON.stringify(diagramData) : null,
         userId: req.user!.id
       },
       include: {
@@ -97,9 +109,15 @@ export const createModel = async (req: AuthRequest, res: Response) => {
       }
     });
 
+    // Parse diagramData back to JSON for the response
+    const modelWithParsedData = {
+      ...model,
+      diagramData: model.diagramData ? JSON.parse(model.diagramData) : null
+    };
+
     res.status(201).json({
       message: 'Model created successfully',
-      model
+      model: modelWithParsedData
     });
   } catch (error) {
     console.error('Create model error:', error);
@@ -139,7 +157,7 @@ export const updateModel = async (req: AuthRequest, res: Response) => {
       data: {
         ...(name && { name }),
         ...(description !== undefined && { description }),
-        ...(diagramData && { diagramData })
+        ...(diagramData && { diagramData: JSON.stringify(diagramData) })
       },
       include: {
         user: {
@@ -148,9 +166,15 @@ export const updateModel = async (req: AuthRequest, res: Response) => {
       }
     });
 
+    // Parse diagramData back to JSON for the response
+    const modelWithParsedData = {
+      ...model,
+      diagramData: model.diagramData ? JSON.parse(model.diagramData) : null
+    };
+
     res.json({
       message: 'Model updated successfully',
-      model
+      model: modelWithParsedData
     });
   } catch (error) {
     console.error('Update model error:', error);

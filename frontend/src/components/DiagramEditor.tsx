@@ -26,17 +26,17 @@ interface DiagramEditorProps {
   diagramType?: 'BDD' | 'IBD';
 }
 
-const DiagramEditor: React.FC<DiagramEditorProps> = ({ 
-  onSave, 
-  initialData, 
-  modelId, 
+const DiagramEditor: React.FC<DiagramEditorProps> = ({
+  onSave,
+  initialData,
+  modelId,
   currentDiagram,
   diagramType = 'BDD'
 }) => {
   const paperRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<joint.dia.Graph | null>(null);
   const paperInstanceRef = useRef<joint.dia.Paper | null>(null);
-  
+
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
   const [showSidePanel, setShowSidePanel] = useState(false);
   const [blockLinks, setBlockLinks] = useState<{ [blockId: string]: number }>({});
@@ -49,7 +49,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   // Initialize JointJS
   useEffect(() => {
     console.log('DiagramEditor useEffect - initializing JointJS');
-    
+
     if (!paperRef.current) {
       console.log('No paper ref available');
       return;
@@ -61,12 +61,12 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
       if (!container) return;
 
       console.log('paperRef.current:', container);
-      
+
       // Get actual container dimensions
       const containerRect = container.getBoundingClientRect();
       const width = Math.max(containerRect.width, 800);
       const height = Math.max(containerRect.height, 600);
-      
+
       console.log('Container rect:', containerRect);
       console.log('Using dimensions:', width, 'x', height);
 
@@ -106,7 +106,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
         try {
           // Clear the graph first
           graph.clear();
-          
+
           // Restore the diagram from JSON data
           if (initialData.cells && Array.isArray(initialData.cells)) {
             // Process each cell in the saved data
@@ -157,10 +157,10 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
         const element = elementView.model as joint.dia.Element;
         const attrs = element.attributes;
         const elementId = element.id as string;
-        
+
         // Try to find corresponding API block
         const apiBlock = modelBlocks.find(b => b.id === elementId);
-        
+
         const selectedBlockData = {
           id: elementId,
           name: attrs.attrs?.text?.text || attrs.attrs?.label?.text || 'Untitled Block',
@@ -170,10 +170,10 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
           type: apiBlock?.type || 'COMPONENT',
           parentId: apiBlock?.parentId || null
         };
-        
+
         setSelectedBlock(selectedBlockData);
         setShowSidePanel(true);
-        
+
         // Load requirements for this block
         loadBlockRequirements(elementId);
       });
@@ -202,7 +202,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
       try {
         // Clear the graph first
         graphRef.current.clear();
-        
+
         // Restore the diagram from JSON data
         if (initialData.cells && Array.isArray(initialData.cells)) {
           // Process each cell in the saved data
@@ -260,7 +260,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   // Load requirements from API
   const loadModelRequirements = async () => {
     if (!modelId) return;
-    
+
     setIsLoadingRequirements(true);
     try {
       const requirements = await requirementService.getModelRequirements(modelId);
@@ -275,7 +275,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   // Load requirements linked to a specific block
   const loadBlockRequirements = async (blockId: string) => {
     if (!modelId) return;
-    
+
     try {
       const response = await linkService.getModelLinks(modelId);
       const blockLinks = response.links
@@ -296,7 +296,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
       // First, remove all existing links for this block
       const currentResponse = await linkService.getModelLinks(modelId);
       const currentBlockLinks = currentResponse.links.filter(link => link.blockId === selectedBlock.id);
-      
+
       for (const link of currentBlockLinks) {
         await linkService.deleteLink(link.id);
       }
@@ -311,7 +311,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
       }
 
       setBlockRequirements(requirementIds);
-      
+
       // Refresh block link counts
       const response = await linkService.getModelLinks(modelId);
       const linkCounts: { [blockId: string]: number } = {};
@@ -330,15 +330,15 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
       if (!modelId || modelId === 'undefined' || modelId === 'new') {
         return;
       }
-      
+
       try {
         const response = await linkService.getModelLinks(modelId);
         const linkCounts: { [blockId: string]: number } = {};
-        
+
         response.links.forEach(link => {
           linkCounts[link.blockId] = (linkCounts[link.blockId] || 0) + 1;
         });
-        
+
         setBlockLinks(linkCounts);
       } catch (error) {
         console.error('Error loading block link counts:', error);
@@ -352,7 +352,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   const createBlock = async () => {
     console.log('createBlock called');
     console.log('graphRef.current:', graphRef.current);
-    
+
     if (!graphRef.current) {
       console.log('No graph reference available');
       return;
@@ -360,7 +360,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
 
     console.log('Creating new block...');
     const position = { x: 100 + Math.random() * 200, y: 100 + Math.random() * 200 };
-    
+
     const rect = new joint.shapes.standard.Rectangle({
       position,
       size: { width: 120, height: 60 },
@@ -396,14 +396,13 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
       try {
         const newBlock = await blockService.createBlock({
           name: 'New Block',
-          description: '',
           type: 'COMPONENT',
           modelId: modelId
         });
-        
+
         // Update local state
-        setModelBlocks(prev => [...prev, newBlock]);
-        
+        setModelBlocks(prev => [...(prev || []), newBlock]);
+
         // Update the JointJS element ID to match the API block ID
         rect.set('id', newBlock.id);
       } catch (error) {
@@ -415,11 +414,11 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   // Load blocks from API
   const loadModelBlocks = async () => {
     if (!modelId) return;
-    
+
     setIsLoadingBlocks(true);
     try {
       const blocks = await blockService.getModelBlocks(modelId);
-      setModelBlocks(blocks);
+      setModelBlocks(blocks || []);
     } catch (error) {
       console.error('Error loading blocks:', error);
     } finally {
@@ -430,11 +429,11 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   // Save block to API
   const saveBlockToAPI = async (blockData: Block) => {
     if (!modelId) return;
-    
+
     try {
       // Check if block exists in API
       const existingApiBlock = modelBlocks.find(b => b.id === blockData.id);
-      
+
       if (existingApiBlock) {
         // Update existing block
         const updatedBlock = await blockService.updateBlock(blockData.id, {
@@ -443,9 +442,9 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
           type: blockData.type,
           parentId: blockData.parentId || undefined
         });
-        
+
         // Update local state
-        setModelBlocks(prev => prev.map(b => b.id === updatedBlock.id ? updatedBlock : b));
+        setModelBlocks(prev => (prev || []).map(b => b.id === updatedBlock.id ? updatedBlock : b));
       } else {
         // Create new block
         const newBlock = await blockService.createBlock({
@@ -455,9 +454,9 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
           modelId: modelId,
           parentId: blockData.parentId || undefined
         });
-        
+
         // Add to local state
-        setModelBlocks(prev => [...prev, newBlock]);
+        setModelBlocks(prev => [...(prev || []), newBlock]);
       }
     } catch (error) {
       console.error('Error saving block:', error);
@@ -486,10 +485,10 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
   // Helper function for parent ID updates
   const updateBlockParent = async (parentId: string | null) => {
     if (!selectedBlock) return;
-    
+
     const updatedBlock = { ...selectedBlock, parentId };
     setSelectedBlock(updatedBlock);
-    
+
     // Save to API
     await saveBlockToAPI(updatedBlock);
   };
@@ -579,7 +578,7 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
       {/* Toolbar */}
       <div className="w-64 bg-white shadow-lg border-r border-gray-200 p-4 flex flex-col flex-shrink-0">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Diagram Tools</h3>
-        
+
         <div className="space-y-3">
           <button
             onClick={createBlock}
@@ -593,11 +592,10 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
 
           <button
             onClick={toggleConnectMode}
-            className={`w-full px-4 py-3 rounded-lg transition-colors duration-200 flex items-center justify-center ${
-              connectMode.current 
-                ? 'bg-red-600 text-white hover:bg-red-700' 
+            className={`w-full px-4 py-3 rounded-lg transition-colors duration-200 flex items-center justify-center ${connectMode.current
+                ? 'bg-red-600 text-white hover:bg-red-700'
                 : 'bg-green-600 text-white hover:bg-green-700'
-            }`}
+              }`}
           >
             <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -639,10 +637,10 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
 
       {/* Canvas */}
       <div className="flex-1 relative bg-gray-100 min-w-0">
-        <div 
-          ref={paperRef} 
+        <div
+          ref={paperRef}
           className="w-full h-full absolute inset-0"
-          style={{ 
+          style={{
             minHeight: '600px',
             minWidth: '400px'
           }}
@@ -792,20 +790,18 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
                             <div className="text-gray-500 text-xs truncate">{requirement.description}</div>
                           )}
                           <div className="flex space-x-1 mt-1">
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
-                              requirement.priority === 'critical' ? 'bg-red-100 text-red-800' :
-                              requirement.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                              requirement.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${requirement.priority === 'critical' ? 'bg-red-100 text-red-800' :
+                                requirement.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                  requirement.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-green-100 text-green-800'
+                              }`}>
                               {requirement.priority}
                             </span>
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
-                              requirement.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              requirement.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                              requirement.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${requirement.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                requirement.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                  requirement.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                              }`}>
                               {requirement.status}
                             </span>
                           </div>
@@ -826,23 +822,23 @@ const DiagramEditor: React.FC<DiagramEditorProps> = ({
                 <BlockLinks
                   modelId={modelId}
                   blockId={selectedBlock.id}
-                onLinkCreated={async () => {
-                  // Refresh block link counts when a link is created
-                  if (modelId) {
-                    try {
-                      const response = await linkService.getModelLinks(modelId);
-                      const linkCounts: { [blockId: string]: number } = {};
-                      
-                      response.links.forEach(link => {
-                        linkCounts[link.blockId] = (linkCounts[link.blockId] || 0) + 1;
-                      });
-                      
-                      setBlockLinks(linkCounts);
-                    } catch (error) {
-                      console.error('Error refreshing block link counts:', error);
+                  onLinkCreated={async () => {
+                    // Refresh block link counts when a link is created
+                    if (modelId) {
+                      try {
+                        const response = await linkService.getModelLinks(modelId);
+                        const linkCounts: { [blockId: string]: number } = {};
+
+                        response.links.forEach(link => {
+                          linkCounts[link.blockId] = (linkCounts[link.blockId] || 0) + 1;
+                        });
+
+                        setBlockLinks(linkCounts);
+                      } catch (error) {
+                        console.error('Error refreshing block link counts:', error);
+                      }
                     }
-                  }
-                }}
+                  }}
                 />
               </div>
             )}

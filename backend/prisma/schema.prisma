@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -30,7 +30,7 @@ model Model {
   id          String   @id @default(cuid())
   name        String
   description String?
-  diagramData Json?    // Stores JointJS diagram JSON
+  diagramData String?  // Stores JointJS diagram JSON as string
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
@@ -50,7 +50,7 @@ model Block {
   id          String    @id @default(cuid())
   name        String
   description String?
-  type        BlockType @default(COMPONENT)
+  type        String    @default("COMPONENT") // COMPONENT, SUBSYSTEM, FUNCTION
   modelId     String
   parentId    String?   // Self-referencing for hierarchy
   createdAt   DateTime  @default(now())
@@ -65,25 +65,14 @@ model Block {
   @@map("blocks")
 }
 
-enum BlockType {
-  COMPONENT
-  SUBSYSTEM
-  FUNCTION
-}
-
-enum DiagramType {
-  BDD // Block Definition Diagram
-  IBD // Internal Block Diagram
-}
-
 model Diagram {
-  id          String      @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
-  type        DiagramType
+  type        String   @default("BDD") // BDD (Block Definition Diagram), IBD (Internal Block Diagram)
   modelId     String
-  diagramData Json?       // Stores JointJS diagram JSON
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  diagramData String?  // Stores JointJS diagram JSON as string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
   model         Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)

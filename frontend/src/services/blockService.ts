@@ -55,7 +55,7 @@ class BlockService {
   async getModelBlocks(modelId: string): Promise<Block[]> {
     try {
       const response = await api.get(`${this.baseURL}/${modelId}`);
-      return response.data;
+      return response.data.blocks;
     } catch (error) {
       console.error('Error fetching model blocks:', error);
       throw error;
@@ -68,7 +68,7 @@ class BlockService {
   async createBlock(blockData: CreateBlockData): Promise<Block> {
     try {
       const response = await api.post(this.baseURL, blockData);
-      return response.data;
+      return response.data.block;
     } catch (error) {
       console.error('Error creating block:', error);
       throw error;
@@ -81,7 +81,7 @@ class BlockService {
   async updateBlock(blockId: string, blockData: UpdateBlockData): Promise<Block> {
     try {
       const response = await api.put(`${this.baseURL}/${blockId}`, blockData);
-      return response.data;
+      return response.data.block;
     } catch (error) {
       console.error('Error updating block:', error);
       throw error;
@@ -115,7 +115,7 @@ class BlockService {
     // Build the hierarchy
     blocks.forEach(block => {
       const blockWithChildren = blockMap.get(block.id)!;
-      
+
       if (block.parentId) {
         const parent = blockMap.get(block.parentId);
         if (parent) {
@@ -136,7 +136,7 @@ class BlockService {
    */
   getBlockDescendants(block: Block): Block[] {
     const descendants: Block[] = [];
-    
+
     const collectDescendants = (currentBlock: Block) => {
       if (currentBlock.children) {
         currentBlock.children.forEach(child => {
@@ -156,12 +156,12 @@ class BlockService {
   getBlockAncestors(block: Block): Block[] {
     const ancestors: Block[] = [];
     let current = block.parent;
-    
+
     while (current) {
       ancestors.unshift(current);
       current = current.parent;
     }
-    
+
     return ancestors;
   }
 

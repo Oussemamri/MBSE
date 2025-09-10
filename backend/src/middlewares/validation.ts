@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from 'express';
 export const validate = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const { error } = schema.validate(req.body);
-    
+
     if (error) {
       return res.status(400).json({
         error: 'Validation Error',
@@ -14,7 +14,7 @@ export const validate = (schema: Joi.ObjectSchema) => {
         }))
       });
     }
-    
+
     next();
   };
 };
@@ -54,10 +54,10 @@ export const schemas = {
 
   block: Joi.object({
     name: Joi.string().required(),
-    description: Joi.string().optional(),
-    type: Joi.string().valid('COMPONENT', 'SUBSYSTEM', 'FUNCTION').optional(),
+    description: Joi.string().optional().allow(''),
+    type: Joi.string().valid('COMPONENT', 'SUBSYSTEM', 'FUNCTION').default('COMPONENT'),
     modelId: Joi.string().required(),
-    parentId: Joi.string().optional().allow(null)
+    parentId: Joi.string().optional().allow(null, '')
   }),
 
   blockUpdate: Joi.object({
